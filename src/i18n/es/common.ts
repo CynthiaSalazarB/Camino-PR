@@ -1,0 +1,33 @@
+export const common: Record<string, string> = {
+  // Nav
+  'nav.home': 'Inicio',
+  'nav.profile': 'Perfil',
+  'nav.plan': 'Plan',
+  'nav.resources': 'Recursos',
+  'nav.settings': 'Ajustes',
+  // Buttons
+  'btn.yes': 'Sí',
+  'btn.no': 'No',
+  'btn.save': 'Guardar',
+  'btn.previous': 'Anterior',
+  'btn.completeAndContinue': 'Completar y seguir',
+  'btn.viewMyPlan': 'Ver mi plan',
+  'btn.start': 'Empezar',
+  'btn.continueWhereLeft': 'Continuar mi progreso',
+  'btn.openInstagram': 'Abrir en Instagram',
+  'btn.visitSite': 'Visitar sitio',
+  // Misc
+  'select.placeholder': 'Selecciona',
+  'select.allProvinces': 'Todas las provincias',
+  'select.all': 'Todas',
+  'why.label': '¿Por qué pedimos esto?',
+  'lang.spanish': 'Español',
+  'lang.portuguese': 'Português',
+  'curated': 'Curada',
+  'budget': '💰 Económico',
+  'pros': '✅ Pros',
+  'cons': '⚠️ Contras',
+  'lastUpdated': 'Última actualización',
+  'moreInfo': 'Más información sobre',
+  'provincialHealthPlan': 'Plan provincial de salud',
+};
