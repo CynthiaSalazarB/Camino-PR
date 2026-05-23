@@ -11,7 +11,7 @@ const Welcome = () => {
   const { lang, setLang, t } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/10 flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden">
       {/* Decorative path elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <svg className="absolute w-full h-full opacity-[0.06]" viewBox="0 0 400 800" fill="none" xmlns="http://www.w3.org/2000/svg">
