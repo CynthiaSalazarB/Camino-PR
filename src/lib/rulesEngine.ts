@@ -2,10 +2,11 @@ import { UserProfile, GeneratedAction, EisenhowerQuadrant, ScoreBreakdown, Insta
 import { instagramResources } from '@/data/instagramResources';
 import { es } from '@/i18n/es';
 import { pt } from '@/i18n/pt';
+import { en } from '@/i18n/en';
 import { Lang } from '@/lib/i18n';
 
 function getT(lang: Lang = 'es') {
-  const dict = lang === 'pt' ? pt : es;
+  const dict = lang === 'pt' ? pt : lang === 'en' ? en : es;
   const fallback = es;
   return (key: string) => dict[key] ?? fallback[key] ?? key;
 }
@@ -292,6 +293,88 @@ export function generatePlan(p: UserProfile, lang: Lang = 'es'): GeneratedAction
   }
 
   return actions.sort((a, b) => b.priorityScore - a.priorityScore);
+}
+
+/**
+ * Simplified CRS (Comprehensive Ranking System) score estimate.
+ * Covers core human capital factors only: age, education, English, Canadian work, foreign work.
+ * Does NOT include spouse points, provincial nomination, or job offer bonus.
+ * Typical competitive Express Entry score without nomination: 450–550.
+ */
+export function estimateCRS(p: UserProfile): number {
+  let score = 0;
+
+  // Age (max 110 for single applicant)
+  if (p.age !== null) {
+    const age = p.age;
+    if (age < 18) score += 0;
+    else if (age === 18) score += 90;
+    else if (age === 19) score += 95;
+    else if (age >= 20 && age <= 24) score += 100;
+    else if (age >= 25 && age <= 29) score += 110;
+    else if (age >= 30 && age <= 34) score += 105;
+    else if (age === 35) score += 99;
+    else if (age === 36) score += 94;
+    else if (age === 37) score += 88;
+    else if (age === 38) score += 83;
+    else if (age === 39) score += 77;
+    else if (age === 40) score += 72;
+    else if (age === 41) score += 66;
+    else if (age === 42) score += 60;
+    else if (age === 43) score += 54;
+    else if (age === 44) score += 48;
+    else if (age === 45) score += 42;
+    else if (age === 46) score += 36;
+    else if (age === 47) score += 30;
+    else if (age === 48) score += 24;
+    else if (age === 49) score += 18;
+    else score += 0;
+  }
+
+  // Education (max 150)
+  const eduPoints: Record<string, number> = {
+    phd: 150, master: 135, bachelor: 120, college: 91, 'high-school': 30, none: 0,
+  };
+  const eduLevel = (p.canadianEducation && p.canadianEducation !== 'none')
+    ? p.canadianEducation
+    : p.foreignEducation;
+  if (eduLevel) score += eduPoints[eduLevel] ?? 0;
+
+  // English — convert raw scores to CLB then to CRS points (per skill, max ~34 × 4 skills)
+  const clb = (() => {
+    if (!p.englishTestType || p.englishTestType === 'estimate') return 0;
+    const vals = [p.englishReading, p.englishListening, p.englishSpeaking, p.englishWriting].map(s => parseFloat(s));
+    if (vals.some(isNaN)) return 0;
+    const avg = vals.reduce((a, b) => a + b, 0) / 4;
+    if (p.englishTestType === 'ielts') {
+      if (avg >= 8.5) return 12;
+      if (avg >= 7.5) return 10;
+      if (avg >= 7.0) return 9;
+      if (avg >= 6.5) return 8;
+      if (avg >= 6.0) return 7;
+      return 0;
+    }
+    if (p.englishTestType === 'celpip') {
+      if (avg >= 10) return 10;
+      if (avg >= 9) return 9;
+      if (avg >= 8) return 8;
+      if (avg >= 7) return 7;
+      return 0;
+    }
+    return 0;
+  })();
+  const ptsPerSkill = clb >= 10 ? 34 : clb === 9 ? 31 : clb === 8 ? 23 : clb === 7 ? 16 : 0;
+  score += ptsPerSkill * 4;
+
+  // Canadian work experience (max 80)
+  const canYears = Math.floor(p.canadianWorkMonths / 12);
+  score += canYears >= 5 ? 80 : canYears === 4 ? 73 : canYears === 3 ? 64 : canYears === 2 ? 53 : canYears === 1 ? 40 : 0;
+
+  // Foreign work experience (max 25)
+  const forYears = Math.floor(p.foreignWorkMonths / 12);
+  score += forYears >= 3 ? 25 : forYears >= 1 ? 13 : 0;
+
+  return Math.min(1200, Math.max(0, score));
 }
 
 export const quadrantLabels: Record<EisenhowerQuadrant, { title: string; color: string }> = {

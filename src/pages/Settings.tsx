@@ -3,14 +3,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { loadState, clearState, getDefaultState } from '@/lib/storage';
 import { AppState, SectionId } from '@/types/profile';
-import { CheckCircle2, Circle, Copy, Trash2, RotateCcw } from 'lucide-react';
+import { CheckCircle2, Circle, Copy, Trash2, RotateCcw, Sun, Moon, Monitor } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/lib/i18n';
+import { useTheme } from 'next-themes';
 import BottomNav from '@/components/BottomNav';
 
 const Settings = () => {
   const { toast } = useToast();
   const { lang, setLang, t } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const [state, setState] = useState<AppState>(getDefaultState);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -118,6 +120,44 @@ const Settings = () => {
               >
                 {t('lang.portuguese')}
               </button>
+              <button
+                onClick={() => setLang('en')}
+                className={`font-medium pb-0.5 ${lang === 'en' ? 'text-foreground border-b-2 border-primary' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                {t('lang.english')}
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardContent className="p-5">
+            <h3 className="font-semibold text-sm mb-3">{t('settings.theme')}</h3>
+            <div className="flex gap-2">
+              <Button
+                variant={theme === 'light' ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1 gap-1.5"
+                onClick={() => setTheme('light')}
+              >
+                <Sun className="w-3.5 h-3.5" /> {t('settings.theme.light')}
+              </Button>
+              <Button
+                variant={theme === 'dark' ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1 gap-1.5"
+                onClick={() => setTheme('dark')}
+              >
+                <Moon className="w-3.5 h-3.5" /> {t('settings.theme.dark')}
+              </Button>
+              <Button
+                variant={theme === 'system' ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1 gap-1.5"
+                onClick={() => setTheme('system')}
+              >
+                <Monitor className="w-3.5 h-3.5" /> {t('settings.theme.system')}
+              </Button>
             </div>
           </CardContent>
         </Card>

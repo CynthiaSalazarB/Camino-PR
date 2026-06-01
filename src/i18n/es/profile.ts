@@ -145,6 +145,16 @@ export const profile: Record<string, string> = {
   'profile.needsTaxHelp': '¿Necesitas ayuda para entender impuestos en Canadá?',
   'profile.needsTaxHelp.why': 'Si necesitas orientación sobre impuestos, te mostramos cuentas de Instagram con contenido educativo sobre taxes en Canadá.',
   'profile.unsureTaxSituation': 'No conozco mi situación fiscal aún',
+  // Quick-start onboarding modal
+  'quickstart.title': '¡Bienvenido! Empecemos',
+  'quickstart.subtitle': '3 preguntas rápidas para personalizar tu plan de inmediato',
+  'quickstart.q1': '¿Cuál es tu estatus migratorio actual?',
+  'quickstart.q2': '¿En qué provincia estás?',
+  'quickstart.q3': '¿Cuál es tu situación laboral?',
+  'quickstart.skip': 'Saltar por ahora',
+  'quickstart.next': 'Siguiente',
+  'quickstart.done': 'Ver mi plan',
+  'quickstart.step': 'Paso {n} de 3',
   // Mind map UI
   'mindmap.clickToFill': 'Haz clic para completar',
   'mindmap.completed': 'Completado',

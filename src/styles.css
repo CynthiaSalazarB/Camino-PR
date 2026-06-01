@@ -44,6 +44,9 @@
   --color-mindmap-services: hsl(var(--mindmap-services));
   --color-mindmap-housing: hsl(var(--mindmap-housing));
   --color-mindmap-docs: hsl(var(--mindmap-docs));
+
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
 }
 
 :root {
@@ -79,6 +82,9 @@
   --mindmap-services: 340 45% 93%;
   --mindmap-housing: 260 35% 93%;
   --mindmap-docs: 195 40% 92%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 38 80% 15%;
+  --muted-foreground: 20 10% 35%;
 }
 
 .dark {
@@ -113,6 +119,8 @@
   --mindmap-services: 340 30% 22%;
   --mindmap-housing: 260 25% 22%;
   --mindmap-docs: 195 30% 20%;
+  --warning: 38 85% 55%;
+  --warning-foreground: 38 80% 10%;
 }
 
 @layer base {

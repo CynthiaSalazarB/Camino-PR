@@ -29,4 +29,16 @@ export const results: Record<string, string> = {
   'results.viewDetailed': 'Ver detalhada',
   'results.prev': 'Anterior',
   'results.next': 'Próximo',
+  // CRS estimate banner
+  'results.crsTitle': 'Pontuação CRS Estimada',
+  'results.crsNote': 'Estimativa baseada nas suas respostas. Não inclui nomeação provincial nem oferta de emprego.',
+  'results.crsLearnMore': 'Calcular no IRCC',
+  // Profile completion banner
+  'results.progressBanner': 'Plano baseado em {answered} de {total} campos respondidos.',
+  'results.progressComplete': 'Perfil completo — plano totalmente personalizado.',
+  'results.progressCta': 'Completar perfil',
+  // Action completion
+  'results.markDone': 'Marcar como concluído',
+  'results.markPending': 'Marcar como pendente',
+  'results.doneSection': 'Concluídas',
 };

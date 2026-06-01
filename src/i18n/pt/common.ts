@@ -20,6 +20,7 @@ export const common: Record<string, string> = {
   'why.label': 'Por que pedimos isso?',
   'lang.spanish': 'Español',
   'lang.portuguese': 'Português',
+  'lang.english': 'English',
   'curated': 'Curada',
   'budget': '💰 Econômico',
   'pros': '✅ Prós',

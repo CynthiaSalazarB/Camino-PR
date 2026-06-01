@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { es } from '@/i18n/es';
 import { pt } from '@/i18n/pt';
+import { en } from '@/i18n/en';
 
-export type Lang = 'es' | 'pt';
+export type Lang = 'es' | 'pt' | 'en';
 
-const dictionaries: Record<Lang, Record<string, string>> = { es, pt };
+const dictionaries: Record<Lang, Record<string, string>> = { es, pt, en };
 
 interface I18nContextType {
   lang: Lang;
@@ -20,6 +21,7 @@ function getInitialLang(): Lang {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === 'pt') return 'pt';
+    if (saved === 'en') return 'en';
   } catch {}
   return 'es';
 }

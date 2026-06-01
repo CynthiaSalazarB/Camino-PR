@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import prCardImg from '@/assets/pr-card.jpg';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,194 +7,142 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from '@/components/ui/alert-dialog';
-import { loadState, saveState, getDefaultState } from '@/lib/storage';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Card, CardContent } from '@/components/ui/card';
+import { loadState, saveState, getDefaultState, hasSavedState } from '@/lib/storage';
 import { generatePlan } from '@/lib/rulesEngine';
-import { UserProfile, AppState } from '@/types/profile';
-import { Save, CheckCircle2, HelpCircle, ArrowRight, ZoomIn, ZoomOut } from 'lucide-react';
+import { UserProfile, AppState, SectionId, SectionStatus } from '@/types/profile';
+import { CheckCircle2, HelpCircle, ArrowRight, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
+import { provinceList, provincesAndCities } from '@/data/provinces';
 import BottomNav from '@/components/BottomNav';
 
-/* ───── layout constants ───── */
-const CW = 1200, CH = 800;
-const CX = CW / 2, CY = CH / 2;
-
-interface NodeDef {
-  id: string;
-  labelKey: string;
-  x: number;
-  y: number;
-}
-
+/* ─── Section definitions aligned to SectionId ─── */
 interface SectionDef {
-  id: string;
+  id: SectionId;
   titleKey: string;
   emoji: string;
   colorClass: string;
-  x: number;
-  y: number;
-  children: NodeDef[];
-  side: 'left' | 'right';
+  nodes: string[];
 }
 
-function buildSections(): SectionDef[] {
-  // Children still needed for completion checks, but positions don't matter (not rendered on canvas)
-  return [
-    {
-      id: 'personal', titleKey: 'mindmap.personal', emoji: '👤',
-      colorClass: 'bg-mindmap-personal', x: CX - 200, y: CY - 140, side: 'left',
-      children: [
-        { id: 'age', labelKey: 'profile.age', x: 0, y: 0 },
-        { id: 'canadianEdu', labelKey: 'profile.canadianEducation', x: 0, y: 0 },
-        { id: 'foreignEdu', labelKey: 'profile.foreignEducation', x: 0, y: 0 },
-        { id: 'englishExam', labelKey: 'profile.englishExam', x: 0, y: 0 },
-        { id: 'frenchExam', labelKey: 'profile.frenchExam', x: 0, y: 0 },
-        { id: 'workCanada', labelKey: 'profile.workCanada', x: 0, y: 0 },
-        { id: 'workForeign', labelKey: 'profile.workForeign', x: 0, y: 0 },
-        { id: 'marital', labelKey: 'profile.maritalStatus', x: 0, y: 0 },
-        { id: 'working', labelKey: 'profile.workingStatus', x: 0, y: 0 },
-      ],
-    },
-    {
-      id: 'services', titleKey: 'mindmap.services', emoji: '🏦',
-      colorClass: 'bg-mindmap-services', x: CX - 200, y: CY + 140, side: 'left',
-      children: [
-        { id: 'phone', labelKey: 'profile.phone', x: 0, y: 0 },
-        { id: 'banking', labelKey: 'profile.banking', x: 0, y: 0 },
-        { id: 'health', labelKey: 'profile.health', x: 0, y: 0 },
-        { id: 'credit', labelKey: 'profile.credit', x: 0, y: 0 },
-      ],
-    },
-    {
-      id: 'housing', titleKey: 'mindmap.housing', emoji: '🏠',
-      colorClass: 'bg-mindmap-housing', x: CX + 200, y: CY - 140, side: 'right',
-      children: [
-        { id: 'housingType', labelKey: 'profile.housing', x: 0, y: 0 },
-        { id: 'lookingHousing', labelKey: 'profile.lookingForHousing', x: 0, y: 0 },
-        { id: 'houseInsurance', labelKey: 'profile.houseInsurance', x: 0, y: 0 },
-      ],
-    },
-    {
-      id: 'docs', titleKey: 'mindmap.docs', emoji: '📄',
-      colorClass: 'bg-mindmap-docs', x: CX + 200, y: CY + 140, side: 'right',
-      children: [
-        { id: 'immigration', labelKey: 'profile.immigrationStatus', x: 0, y: 0 },
-        { id: 'provincialId', labelKey: 'profile.provincialId', x: 0, y: 0 },
-        { id: 'sinNumber', labelKey: 'profile.sinNumber', x: 0, y: 0 },
-      ],
-    },
-  ];
-}
+const SECTIONS: SectionDef[] = [
+  {
+    id: 'personal',
+    titleKey: 'section.personal',
+    emoji: '👤',
+    colorClass: 'bg-mindmap-personal',
+    nodes: ['age', 'immigrationStatus', 'province', 'marital', 'working'],
+  },
+  {
+    id: 'education',
+    titleKey: 'section.education',
+    emoji: '🎓',
+    colorClass: 'bg-mindmap-docs',
+    nodes: ['canadianEdu', 'foreignEdu', 'wesStatus'],
+  },
+  {
+    id: 'languages',
+    titleKey: 'section.languages',
+    emoji: '🌍',
+    colorClass: 'bg-mindmap-services',
+    nodes: ['englishExam', 'frenchExam'],
+  },
+  {
+    id: 'work',
+    titleKey: 'section.work',
+    emoji: '💼',
+    colorClass: 'bg-mindmap-housing',
+    nodes: ['workCanada', 'workForeign', 'foreignTeer'],
+  },
+  {
+    id: 'settlement',
+    titleKey: 'section.settlement',
+    emoji: '🏠',
+    colorClass: 'bg-secondary',
+    nodes: ['sin', 'phone', 'banking', 'health', 'provincialId', 'housingType', 'lookingHousing', 'houseInsurance', 'creditStatus', 'needsTaxHelp'],
+  },
+];
 
-/* ───── component ───── */
+/* ─── component ─── */
 const ProfileBuilder = () => {
   const navigate = useNavigate();
   const { t, lang } = useLanguage();
   const [state, setState] = useState<AppState>(getDefaultState);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
-
-  /* ── section complete alert ── */
-  const [completedAlert, setCompletedAlert] = useState<string | null>(null);
-  const alertedSections = useRef<Set<string>>(new Set());
-
-  /* ── camera pan state ── */
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const isPanning = useRef(false);
-  const panStart = useRef({ x: 0, y: 0 });
-  const panOrigin = useRef({ x: 0, y: 0 });
-
-  /* ── touch gesture refs (mobile) ── */
-  const touchStartDist = useRef(0);
-  const touchStartZoom = useRef(1);
-  const lastTouchCount = useRef(0);
-  const touchPanStart = useRef({ x: 0, y: 0 });
-  const touchPanOrigin = useRef({ x: 0, y: 0 });
-
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('[data-section-node]')) return;
-    isPanning.current = true;
-    panStart.current = { x: e.clientX, y: e.clientY };
-    panOrigin.current = { ...pan };
-    containerRef.current?.setPointerCapture(e.pointerId);
-    if (containerRef.current) containerRef.current.style.cursor = 'grabbing';
-  }, [pan]);
-
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isPanning.current) return;
-    const dx = e.clientX - panStart.current.x;
-    const dy = e.clientY - panStart.current.y;
-    setPan({ x: panOrigin.current.x + dx, y: panOrigin.current.y + dy });
-  }, []);
-
-  const onPointerUp = useCallback((e: React.PointerEvent) => {
-    isPanning.current = false;
-    containerRef.current?.releasePointerCapture(e.pointerId);
-    if (containerRef.current) containerRef.current.style.cursor = 'grab';
-  }, []);
-
-  /* ── touch handlers (mobile pinch-to-zoom + fast pan) ── */
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('[data-section-node]')) return;
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      const dist = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      touchStartDist.current = dist;
-      touchStartZoom.current = zoom;
-      lastTouchCount.current = 2;
-    } else if (e.touches.length === 1) {
-      lastTouchCount.current = 1;
-      touchPanStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      touchPanOrigin.current = { ...pan };
-    }
-  }, [zoom, pan]);
-
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
-    if ((e.target as HTMLElement).closest('[data-section-node]')) return;
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      const dist = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      const scale = dist / touchStartDist.current;
-      setZoom(Math.min(Math.max(touchStartZoom.current * scale, 0.4), 2));
-      lastTouchCount.current = 2;
-    } else if (e.touches.length === 1 && lastTouchCount.current !== 2) {
-      const speedFactor = 1.8;
-      const dx = (e.touches[0].clientX - touchPanStart.current.x) * speedFactor;
-      const dy = (e.touches[0].clientY - touchPanStart.current.y) * speedFactor;
-      setPan({ x: touchPanOrigin.current.x + dx, y: touchPanOrigin.current.y + dy });
-    }
-  }, []);
-
-  const onTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 0) {
-      lastTouchCount.current = 0;
-    }
-  }, []);
+  const [activeSection, setActiveSection] = useState<SectionId | null>(null);
+  const [showQuickStart, setShowQuickStart] = useState(false);
+  const [quickStep, setQuickStep] = useState(0);
 
   useEffect(() => {
     const saved = loadState();
     if (saved) {
-      setState(saved);
+      setState(prev => ({ ...prev, ...saved, completedActions: saved.completedActions ?? [] }));
+    } else {
+      setShowQuickStart(true);
     }
   }, []);
 
   const p = state.userProfile;
-  const updateProfile = (updates: Partial<UserProfile>) => {
+
+  const updateProfile = useCallback((updates: Partial<UserProfile>) => {
     setState(prev => {
       const next = { ...prev, userProfile: { ...prev.userProfile, ...updates } };
       saveState(next);
       return next;
     });
-  };
+  }, []);
 
-  const handleSave = () => saveState(state);
+  const isNodeComplete = useCallback((id: string): boolean => {
+    switch (id) {
+      case 'age': return p.age !== null;
+      case 'immigrationStatus': return p.immigrationStatus !== null;
+      case 'province': return p.province !== '';
+      case 'marital': return p.maritalStatus !== null;
+      case 'working': return p.workingStatus !== null;
+      case 'canadianEdu': return p.canadianEducation !== null;
+      case 'foreignEdu': return p.foreignEducation !== null;
+      case 'wesStatus': return p.wesStatus !== null;
+      case 'englishExam': return !!p.englishTestType;
+      case 'frenchExam': return !!p.frenchExamType;
+      case 'workCanada': return p.canadianWorkMonths > 0;
+      case 'workForeign': return p.foreignWorkMonths > 0;
+      case 'foreignTeer': return p.foreignTeer !== 'unknown';
+      case 'sin': return p.hasSin !== null;
+      case 'phone': return p.hasPhone !== null;
+      case 'banking': return p.hasBanking !== null;
+      case 'health': return p.healthCoverage !== null;
+      case 'provincialId': return p.hasProvincialId !== null;
+      case 'housingType': return p.housingType !== null;
+      case 'lookingHousing': return p.lookingForHousing !== null;
+      case 'houseInsurance': return p.hasRentInsurance !== null;
+      case 'creditStatus': return p.creditStatus !== null;
+      case 'needsTaxHelp': return p.needsTaxHelp !== null;
+      default: return false;
+    }
+  }, [p]);
+
+  const computeSectionStatus = useCallback((sec: SectionDef): SectionStatus => {
+    const completed = sec.nodes.filter(id => isNodeComplete(id)).length;
+    if (completed === 0) return 'empty';
+    if (completed === sec.nodes.length) return 'complete';
+    return 'in-progress';
+  }, [isNodeComplete]);
+
+  const handleSheetClose = useCallback((sectionId: SectionId) => {
+    setState(prev => {
+      const sec = SECTIONS.find(s => s.id === sectionId)!;
+      const nodes = sec.nodes;
+      const completed = nodes.filter(id => isNodeComplete(id)).length;
+      const status: SectionStatus = completed === 0 ? 'empty' : completed === nodes.length ? 'complete' : 'in-progress';
+      const updated = {
+        ...prev,
+        completionStatus: { ...prev.completionStatus, [sectionId]: status },
+      };
+      saveState(updated);
+      return updated;
+    });
+    setActiveSection(null);
+  }, [isNodeComplete]);
 
   const handleGeneratePlan = () => {
     const plan = generatePlan(state.userProfile, lang);
@@ -205,73 +152,107 @@ const ProfileBuilder = () => {
     navigate('/results');
   };
 
-  const isNodeComplete = (id: string): boolean => {
-    switch (id) {
-      case 'age': return p.age !== null;
-      case 'canadianEdu': return p.canadianEducation !== null;
-      case 'foreignEdu': return p.foreignEducation !== null;
-      case 'englishExam': return !!p.englishTestType;
-      case 'frenchExam': return !!p.frenchExamType;
-      case 'workCanada': return p.canadianWorkMonths > 0;
-      case 'workForeign': return p.foreignWorkMonths > 0;
-      case 'marital': return p.maritalStatus !== null;
-      case 'working': return p.workingStatus !== null;
-      case 'phone': return p.hasPhone !== null;
-      case 'banking': return p.hasBanking !== null;
-      case 'health': return p.healthCoverage !== null;
-      case 'credit': return p.knowsCreditScore !== null;
-      case 'housingType': return p.housingType !== null;
-      case 'lookingHousing': return p.lookingForHousing !== null;
-      case 'houseInsurance': return p.hasRentInsurance !== null;
-      case 'immigration': return p.immigrationStatus !== null;
-      case 'provincialId': return p.hasProvincialId !== null;
-      case 'sinNumber': return p.hasSin !== null;
-      default: return false;
-    }
+  const handleQuickStartDone = () => {
+    setShowQuickStart(false);
+    saveState(state);
   };
 
-  const isSectionComplete = (sec: SectionDef) => sec.children.every(ch => isNodeComplete(ch.id));
+  const cityOptions = p.province ? (provincesAndCities[p.province] ?? []) : [];
 
-  /* ── check section completeness after sheet closes ── */
-  const checkSectionComplete = useCallback(() => {
-    const secs = buildSections();
-    for (const sec of secs) {
-      if (alertedSections.current.has(sec.id)) continue;
-      const allDone = sec.children.every(ch => isNodeComplete(ch.id));
-      if (allDone) {
-        alertedSections.current.add(sec.id);
-        setCompletedAlert(sec.id);
-        break;
-      }
-    }
-  }, [state.userProfile]);
-
-  const sections = buildSections();
-  const CIRCLE_R = 60;
-  const SECTION_W = 240;
-  const SECTION_H = 50;
-
-  /* ───── SVG lines (only section→center) ───── */
-  const renderLines = () => {
-    return sections.map(sec => (
-      <line key={`${sec.id}-center`} x1={sec.x} y1={sec.y} x2={CX} y2={CY}
-        stroke="hsl(var(--border))" strokeWidth={1.5} />
-    ));
-  };
-
-  /* ───── Section form content ───── */
-  const renderSectionForm = (sectionId: string) => {
+  /* ─── Section form content ─── */
+  const renderSectionForm = (sectionId: SectionId) => {
     switch (sectionId) {
       case 'personal':
         return (
           <div className="space-y-6">
-            {/* Age */}
             <div className="space-y-2">
               <Label>{t('profile.age')}</Label>
-              <Input type="number" placeholder={t('profile.age.placeholder')} value={p.age ?? ''} onChange={e => updateProfile({ age: e.target.value ? parseInt(e.target.value) : null })} />
+              <Input type="number" placeholder={t('profile.age.placeholder')} value={p.age ?? ''}
+                onChange={e => updateProfile({ age: e.target.value ? parseInt(e.target.value) : null })} />
             </div>
 
-            {/* Canadian Education */}
+            <div className="space-y-2">
+              <Label>{t('profile.immigrationStatus')}</Label>
+              <Select value={p.immigrationStatus ?? ''} onValueChange={v => updateProfile({ immigrationStatus: v as any })}>
+                <SelectTrigger><SelectValue placeholder={t('select.placeholder')} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="study-permit">{t('profile.immigrationStatus.studyPermit')}</SelectItem>
+                  <SelectItem value="pgwp">{t('profile.immigrationStatus.pgwp')}</SelectItem>
+                  <SelectItem value="work-permit">{t('profile.immigrationStatus.workPermit')}</SelectItem>
+                  <SelectItem value="visitor">{t('profile.immigrationStatus.visitor')}</SelectItem>
+                  <SelectItem value="pr">{t('profile.immigrationStatus.pr')}</SelectItem>
+                  <SelectItem value="other">{t('profile.immigrationStatus.other')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t('profile.province')}</Label>
+              <Select value={p.province} onValueChange={v => updateProfile({ province: v, city: '' })}>
+                <SelectTrigger><SelectValue placeholder={t('profile.province.placeholder')} /></SelectTrigger>
+                <SelectContent>
+                  {provinceList.map(prov => (
+                    <SelectItem key={prov} value={prov}>{prov}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {cityOptions.length > 0 && (
+              <div className="space-y-2">
+                <Label>{t('profile.city')}</Label>
+                <Select value={p.city} onValueChange={v => updateProfile({ city: v })}>
+                  <SelectTrigger><SelectValue placeholder={t('profile.city.placeholder')} /></SelectTrigger>
+                  <SelectContent>
+                    {cityOptions.map(city => (
+                      <SelectItem key={city} value={city}>{city}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>{t('profile.maritalStatus')}</Label>
+              <Select value={p.maritalStatus ?? ''} onValueChange={v => updateProfile({ maritalStatus: v as any })}>
+                <SelectTrigger><SelectValue placeholder={t('select.placeholder')} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="single">{t('profile.maritalStatus.single')}</SelectItem>
+                  <SelectItem value="married">{t('profile.maritalStatus.married')}</SelectItem>
+                  <SelectItem value="common-law">{t('profile.maritalStatus.commonLaw')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {(p.maritalStatus === 'married' || p.maritalStatus === 'common-law') && (
+              <div className="flex items-center gap-3">
+                <Switch checked={p.partnerComing} onCheckedChange={v => updateProfile({ partnerComing: v })} />
+                <Label>{t('profile.partnerComing')}</Label>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>{t('profile.children')}</Label>
+              <Input type="number" placeholder={t('profile.children.placeholder')} min={0} value={p.childrenCount || ''}
+                onChange={e => updateProfile({ childrenCount: parseInt(e.target.value) || 0 })} />
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t('profile.workingStatus')}</Label>
+              <Select value={p.workingStatus ?? ''} onValueChange={v => updateProfile({ workingStatus: v as any })}>
+                <SelectTrigger><SelectValue placeholder={t('select.placeholder')} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="working">{t('profile.workingStatus.working')}</SelectItem>
+                  <SelectItem value="not-working">{t('profile.workingStatus.notWorking')}</SelectItem>
+                  <SelectItem value="studying">{t('profile.workingStatus.studying')}</SelectItem>
+                  <SelectItem value="looking">{t('profile.workingStatus.looking')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        );
+
+      case 'education':
+        return (
+          <div className="space-y-6">
             <div className="space-y-2">
               <Label>{t('profile.canadianEducation')}</Label>
               <Select value={p.canadianEducation ?? ''} onValueChange={v => updateProfile({ canadianEducation: v as any })}>
@@ -287,7 +268,6 @@ const ProfileBuilder = () => {
               </Select>
             </div>
 
-            {/* Foreign Education + WES */}
             <div className="space-y-2">
               <Label>{t('profile.foreignEducation')}</Label>
               <Select value={p.foreignEducation ?? ''} onValueChange={v => updateProfile({ foreignEducation: v as any })}>
@@ -302,6 +282,7 @@ const ProfileBuilder = () => {
                 </SelectContent>
               </Select>
             </div>
+
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Label>{t('profile.wes')}</Label>
@@ -320,8 +301,12 @@ const ProfileBuilder = () => {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        );
 
-            {/* English Exam */}
+      case 'languages':
+        return (
+          <div className="space-y-6">
             <div className="space-y-3 p-3 rounded-lg border border-border/50 bg-muted/30">
               <Label className="font-semibold">{t('profile.englishExam')}</Label>
               <div className="space-y-2">
@@ -355,7 +340,6 @@ const ProfileBuilder = () => {
               </div>
             </div>
 
-            {/* French Exam */}
             <div className="space-y-3 p-3 rounded-lg border border-border/50 bg-muted/30">
               <Label className="font-semibold">{t('profile.frenchExam')}</Label>
               <div className="space-y-2">
@@ -387,8 +371,12 @@ const ProfileBuilder = () => {
                 </div>
               </div>
             </div>
+          </div>
+        );
 
-            {/* Canadian Work Experience */}
+      case 'work':
+        return (
+          <div className="space-y-6">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Label>{t('profile.workCanada')} — {t('profile.workYears')}</Label>
@@ -402,63 +390,50 @@ const ProfileBuilder = () => {
                 onChange={e => updateProfile({ canadianWorkMonths: (parseInt(e.target.value) || 0) * 12 })} />
             </div>
 
-            {/* Foreign Work Experience */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Label>{t('profile.workForeign')} — {t('profile.workYears')}</Label>
-                <Tooltip>
-                  <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-muted-foreground" /></TooltipTrigger>
-                  <TooltipContent className="max-w-[250px]"><p className="text-xs">{t('profile.workTeerTooltip')}</p></TooltipContent>
-                </Tooltip>
               </div>
               <Input type="number" placeholder={t('profile.workYears.placeholder')} min={0}
                 value={p.foreignWorkMonths ? Math.round(p.foreignWorkMonths / 12) : ''}
                 onChange={e => updateProfile({ foreignWorkMonths: (parseInt(e.target.value) || 0) * 12 })} />
             </div>
 
-            {/* Marital Status */}
             <div className="space-y-2">
-              <Label>{t('profile.maritalStatus')}</Label>
-              <Select value={p.maritalStatus ?? ''} onValueChange={v => updateProfile({ maritalStatus: v as any })}>
-                <SelectTrigger><SelectValue placeholder={t('select.placeholder')} /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="single">{t('profile.maritalStatus.single')}</SelectItem>
-                  <SelectItem value="married">{t('profile.maritalStatus.married')}</SelectItem>
-                  <SelectItem value="common-law">{t('profile.maritalStatus.commonLaw')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {(p.maritalStatus === 'married' || p.maritalStatus === 'common-law') && (
-              <div className="flex items-center gap-3">
-                <Switch checked={p.partnerComing} onCheckedChange={v => updateProfile({ partnerComing: v })} />
-                <Label>{t('profile.partnerComing')}</Label>
+              <div className="flex items-center gap-2">
+                <Label>{t('profile.foreignTeer')}</Label>
+                <Tooltip>
+                  <TooltipTrigger><HelpCircle className="w-3.5 h-3.5 text-muted-foreground" /></TooltipTrigger>
+                  <TooltipContent className="max-w-[250px]"><p className="text-xs">{t('profile.workTeerTooltip')}</p></TooltipContent>
+                </Tooltip>
               </div>
-            )}
-            <div className="space-y-2">
-              <Label>{t('profile.children')}</Label>
-              <Input type="number" placeholder={t('profile.children.placeholder')} min={0} value={p.childrenCount || ''} onChange={e => updateProfile({ childrenCount: parseInt(e.target.value) || 0 })} />
-            </div>
-
-            {/* Working Status */}
-            <div className="space-y-2">
-              <Label>{t('profile.workingStatus')}</Label>
-              <Select value={p.workingStatus ?? ''} onValueChange={v => updateProfile({ workingStatus: v as any })}>
+              <Select value={p.foreignTeer} onValueChange={v => updateProfile({ foreignTeer: v as any })}>
                 <SelectTrigger><SelectValue placeholder={t('select.placeholder')} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="working">{t('profile.workingStatus.working')}</SelectItem>
-                  <SelectItem value="not-working">{t('profile.workingStatus.notWorking')}</SelectItem>
-                  <SelectItem value="studying">{t('profile.workingStatus.studying')}</SelectItem>
-                  <SelectItem value="looking">{t('profile.workingStatus.looking')}</SelectItem>
+                  <SelectItem value="unknown">{t('profile.teer.unknown')}</SelectItem>
+                  <SelectItem value="0">{t('profile.teer.0')}</SelectItem>
+                  <SelectItem value="1">{t('profile.teer.1')}</SelectItem>
+                  <SelectItem value="2">{t('profile.teer.2')}</SelectItem>
+                  <SelectItem value="3">{t('profile.teer.3')}</SelectItem>
+                  <SelectItem value="4">{t('profile.teer.4')}</SelectItem>
+                  <SelectItem value="5">{t('profile.teer.5')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
         );
 
-      case 'services':
+      case 'settlement':
         return (
           <div className="space-y-6">
-            {/* Phone */}
+            <div className="space-y-2">
+              <Label>{t('profile.hasSin')}</Label>
+              <div className="flex gap-2">
+                <Button className="flex-1" variant={p.hasSin === true ? 'default' : 'outline'} onClick={() => updateProfile({ hasSin: true })}>{t('btn.yes')}</Button>
+                <Button className="flex-1" variant={p.hasSin === false ? 'default' : 'outline'} onClick={() => updateProfile({ hasSin: false })}>{t('btn.no')}</Button>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>{t('profile.hasPhone')}</Label>
               <div className="flex gap-2">
@@ -467,7 +442,6 @@ const ProfileBuilder = () => {
               </div>
             </div>
 
-            {/* Banking */}
             <div className="space-y-2">
               <Label>{t('profile.hasBanking')}</Label>
               <div className="flex gap-2">
@@ -476,7 +450,6 @@ const ProfileBuilder = () => {
               </div>
             </div>
 
-            {/* Health Coverage */}
             <div className="space-y-2">
               <Label>{t('profile.healthCoverage')}</Label>
               <Select value={p.healthCoverage ?? ''} onValueChange={v => updateProfile({ healthCoverage: v as any })}>
@@ -491,21 +464,26 @@ const ProfileBuilder = () => {
               </Select>
             </div>
 
-            {/* Credit Score */}
             <div className="space-y-2">
-              <Label>{t('profile.knowsCreditScore')}</Label>
+              <Label>{t('profile.hasProvincialId')}</Label>
               <div className="flex gap-2">
-                <Button className="flex-1" variant={p.knowsCreditScore === true ? 'default' : 'outline'} onClick={() => updateProfile({ knowsCreditScore: true })}>{t('btn.yes')}</Button>
-                <Button className="flex-1" variant={p.knowsCreditScore === false ? 'default' : 'outline'} onClick={() => updateProfile({ knowsCreditScore: false })}>{t('btn.no')}</Button>
+                <Button className="flex-1" variant={p.hasProvincialId === true ? 'default' : 'outline'} onClick={() => updateProfile({ hasProvincialId: true })}>{t('btn.yes')}</Button>
+                <Button className="flex-1" variant={p.hasProvincialId === false ? 'default' : 'outline'} onClick={() => updateProfile({ hasProvincialId: false })}>{t('btn.no')}</Button>
               </div>
             </div>
-          </div>
-        );
+            {p.hasProvincialId === true && (
+              <div className="space-y-2">
+                <Label>{t('profile.provincialIdType')}</Label>
+                <Select value={p.provincialIdType ?? ''} onValueChange={v => updateProfile({ provincialIdType: v })}>
+                  <SelectTrigger><SelectValue placeholder={t('select.placeholder')} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="driver-license">{t('profile.driverLicense')}</SelectItem>
+                    <SelectItem value="photo-card">{t('profile.photoCard')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-      case 'housing':
-        return (
-          <div className="space-y-6">
-            {/* Housing Type */}
             <div className="space-y-2">
               <Label>{t('profile.housingType')}</Label>
               <Select value={p.housingType ?? ''} onValueChange={v => updateProfile({ housingType: v as any })}>
@@ -519,7 +497,6 @@ const ProfileBuilder = () => {
               </Select>
             </div>
 
-            {/* Looking for Housing */}
             <div className="space-y-2">
               <Label>{t('profile.lookingForHousing')}</Label>
               <div className="flex gap-2">
@@ -543,7 +520,6 @@ const ProfileBuilder = () => {
               </>
             )}
 
-            {/* House Insurance */}
             <div className="space-y-2">
               <Label>{t('profile.hasRentInsurance')}</Label>
               <div className="flex gap-2">
@@ -551,151 +527,137 @@ const ProfileBuilder = () => {
                 <Button className="flex-1" variant={p.hasRentInsurance === false ? 'default' : 'outline'} onClick={() => updateProfile({ hasRentInsurance: false })}>{t('btn.no')}</Button>
               </div>
             </div>
-          </div>
-        );
 
-      case 'docs':
-        return (
-          <div className="space-y-6">
-            {/* Immigration Status */}
             <div className="space-y-2">
-              <Label>{t('profile.immigrationStatus')}</Label>
-              <Select value={p.immigrationStatus ?? ''} onValueChange={v => updateProfile({ immigrationStatus: v as any })}>
+              <Label>{t('profile.creditStatus')}</Label>
+              <Select value={p.creditStatus ?? ''} onValueChange={v => updateProfile({ creditStatus: v as any, knowsCreditScore: v !== null })}>
                 <SelectTrigger><SelectValue placeholder={t('select.placeholder')} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="study-permit">{t('profile.immigrationStatus.studyPermit')}</SelectItem>
-                  <SelectItem value="pgwp">{t('profile.immigrationStatus.pgwp')}</SelectItem>
-                  <SelectItem value="work-permit">{t('profile.immigrationStatus.workPermit')}</SelectItem>
-                  <SelectItem value="visitor">{t('profile.immigrationStatus.visitor')}</SelectItem>
-                  <SelectItem value="pr">{t('profile.immigrationStatus.pr')}</SelectItem>
-                  <SelectItem value="other">{t('profile.immigrationStatus.other')}</SelectItem>
+                  <SelectItem value="none">{t('profile.creditStatus.none')}</SelectItem>
+                  <SelectItem value="new">{t('profile.creditStatus.new')}</SelectItem>
+                  <SelectItem value="ok">{t('profile.creditStatus.ok')}</SelectItem>
+                  <SelectItem value="poor">{t('profile.creditStatus.poor')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Provincial ID */}
             <div className="space-y-2">
-              <Label>{t('profile.hasProvincialId')}</Label>
+              <Label>{t('profile.needsTaxHelp')}</Label>
               <div className="flex gap-2">
-                <Button className="flex-1" variant={p.hasProvincialId === true ? 'default' : 'outline'} onClick={() => updateProfile({ hasProvincialId: true })}>{t('btn.yes')}</Button>
-                <Button className="flex-1" variant={p.hasProvincialId === false ? 'default' : 'outline'} onClick={() => updateProfile({ hasProvincialId: false })}>{t('btn.no')}</Button>
+                <Button className="flex-1" variant={p.needsTaxHelp === true ? 'default' : 'outline'} onClick={() => updateProfile({ needsTaxHelp: true })}>{t('btn.yes')}</Button>
+                <Button className="flex-1" variant={p.needsTaxHelp === false ? 'default' : 'outline'} onClick={() => updateProfile({ needsTaxHelp: false })}>{t('btn.no')}</Button>
               </div>
-            </div>
-            {p.hasProvincialId === true && (
-              <div className="space-y-2">
-                <Label>{t('profile.provincialIdType')}</Label>
-                <Select value={p.provincialIdType ?? ''} onValueChange={v => updateProfile({ provincialIdType: v })}>
-                  <SelectTrigger><SelectValue placeholder={t('select.placeholder')} /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="driver-license">{t('profile.driverLicense')}</SelectItem>
-                    <SelectItem value="photo-card">{t('profile.photoCard')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* SIN Number */}
-            <div className="space-y-2">
-              <Label>{t('profile.hasSin')}</Label>
-              <div className="flex gap-2">
-                <Button className="flex-1" variant={p.hasSin === true ? 'default' : 'outline'} onClick={() => updateProfile({ hasSin: true })}>{t('btn.yes')}</Button>
-                <Button className="flex-1" variant={p.hasSin === false ? 'default' : 'outline'} onClick={() => updateProfile({ hasSin: false })}>{t('btn.no')}</Button>
+              <div className="flex items-center gap-3 mt-2">
+                <Switch checked={p.unsureTaxSituation} onCheckedChange={v => updateProfile({ unsureTaxSituation: v })} />
+                <Label className="text-sm text-muted-foreground">{t('profile.unsureTaxSituation')}</Label>
               </div>
             </div>
           </div>
         );
 
-      default: return null;
+      default:
+        return null;
     }
   };
 
-  const activeSectionData = activeSection ? sections.find(s => s.id === activeSection) : null;
-  const alertSectionTitle = completedAlert ? t(sections.find(s => s.id === completedAlert)?.titleKey || '') : '';
+  const activeSectionDef = SECTIONS.find(s => s.id === activeSection);
+
+  /* ─── Quick-start modal steps ─── */
+  const quickSteps = [
+    {
+      question: t('quickstart.q1'),
+      content: (
+        <Select value={p.immigrationStatus ?? ''} onValueChange={v => updateProfile({ immigrationStatus: v as any })}>
+          <SelectTrigger><SelectValue placeholder={t('select.placeholder')} /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="study-permit">{t('profile.immigrationStatus.studyPermit')}</SelectItem>
+            <SelectItem value="pgwp">{t('profile.immigrationStatus.pgwp')}</SelectItem>
+            <SelectItem value="work-permit">{t('profile.immigrationStatus.workPermit')}</SelectItem>
+            <SelectItem value="visitor">{t('profile.immigrationStatus.visitor')}</SelectItem>
+            <SelectItem value="pr">{t('profile.immigrationStatus.pr')}</SelectItem>
+            <SelectItem value="other">{t('profile.immigrationStatus.other')}</SelectItem>
+          </SelectContent>
+        </Select>
+      ),
+    },
+    {
+      question: t('quickstart.q2'),
+      content: (
+        <Select value={p.province} onValueChange={v => updateProfile({ province: v, city: '' })}>
+          <SelectTrigger><SelectValue placeholder={t('profile.province.placeholder')} /></SelectTrigger>
+          <SelectContent>
+            {provinceList.map(prov => (
+              <SelectItem key={prov} value={prov}>{prov}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ),
+    },
+    {
+      question: t('quickstart.q3'),
+      content: (
+        <div className="flex flex-col gap-2">
+          {(['working', 'not-working', 'studying', 'looking'] as const).map(ws => (
+            <Button key={ws} variant={p.workingStatus === ws ? 'default' : 'outline'} className="justify-start"
+              onClick={() => updateProfile({ workingStatus: ws })}>
+              {t(`profile.workingStatus.${ws === 'not-working' ? 'notWorking' : ws === 'studying' ? 'studying' : ws === 'looking' ? 'looking' : 'working'}`)}
+            </Button>
+          ))}
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center justify-between">
         <h2 className="font-bold text-lg text-foreground">{t('profile.title')}</h2>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={handleSave} className="text-xs gap-1">
-            <Save className="w-3.5 h-3.5" /> {t('btn.save')}
-          </Button>
-          <Button size="sm" onClick={handleGeneratePlan} className="text-xs gap-1">
-            {t('btn.generatePlan')} <ArrowRight className="w-3.5 h-3.5" />
-          </Button>
-        </div>
+        <Button size="sm" onClick={handleGeneratePlan} className="text-xs gap-1">
+          {t('btn.generatePlan')} <ArrowRight className="w-3.5 h-3.5" />
+        </Button>
       </div>
 
-      {/* Mind Map – camera pan + zoom */}
-      <div
-        ref={containerRef}
-        className="overflow-hidden flex-1 relative select-none touch-none"
-        style={{ cursor: 'grab' }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-      >
-        {/* Zoom controls */}
-        <div className="absolute top-3 right-3 z-10 flex flex-col gap-1">
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setZoom(z => Math.min(2, z + 0.15))}>
-            <ZoomIn className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setZoom(z => Math.max(0.4, z - 0.15))}>
-            <ZoomOut className="w-4 h-4" />
-          </Button>
-        </div>
-        <div
-          className="relative"
-          style={{ width: CW, height: CH, transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: 'center center' }}
-        >
-          {/* SVG lines layer */}
-          <svg className="absolute inset-0 pointer-events-none z-0" width={CW} height={CH}>
-            {renderLines()}
-          </svg>
-
-          {/* Center – PR card image + label */}
-          <div
-            className="absolute flex flex-col items-center justify-center"
-            style={{ left: CX - CIRCLE_R * 1.4, top: CY - CIRCLE_R - 10, width: CIRCLE_R * 2.8 }}
-          >
-            <div
-              className="rounded-xl overflow-hidden shadow-lg border-2 border-primary"
-              style={{ width: CIRCLE_R * 2.8, height: CIRCLE_R * 1.8 }}
-            >
-              <img
-                src={prCardImg}
-                alt="Permanent Resident Card"
-                className="w-full h-full object-cover"
-                draggable={false}
-              />
-            </div>
-            <span className="mt-1 font-bold text-sm text-foreground whitespace-nowrap">Camino PR</span>
-          </div>
-
-          {/* Section nodes – clickable */}
-          {sections.map(sec => {
-            const complete = isSectionComplete(sec);
-            const completedCount = sec.children.filter(ch => isNodeComplete(ch.id)).length;
+      {/* Section card grid */}
+      <div className="px-4 py-5 max-w-2xl mx-auto">
+        <div className="grid grid-cols-2 gap-3">
+          {SECTIONS.map(sec => {
+            const status = computeSectionStatus(sec);
+            const completedCount = sec.nodes.filter(id => isNodeComplete(id)).length;
+            const isComplete = status === 'complete';
             return (
-              <div
+              <Card
                 key={sec.id}
-                data-section-node
                 onClick={() => setActiveSection(sec.id)}
-                className={`absolute flex items-center gap-2 px-4 py-2.5 rounded-2xl font-semibold text-sm shadow-sm border border-border/50 z-10 ${sec.colorClass} cursor-pointer hover:scale-105 transition-transform`}
-                style={{ left: sec.x - SECTION_W / 2, top: sec.y - SECTION_H / 2, width: SECTION_W, height: SECTION_H }}
+                className={`cursor-pointer hover:shadow-md transition-all active:scale-95 border-2 ${
+                  isComplete ? 'border-primary/50' : 'border-border'
+                } ${sec.id === 'settlement' ? 'col-span-2' : ''}`}
               >
-                <span className="text-lg">{sec.emoji}</span>
-                <span className="truncate flex-1">{t(sec.titleKey)}</span>
-                {complete ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                ) : (
-                  <span className="text-xs text-muted-foreground flex-shrink-0">{completedCount}/{sec.children.length}</span>
-                )}
-              </div>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <span className="text-2xl">{sec.emoji}</span>
+                    {isComplete ? (
+                      <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-1" />
+                    )}
+                  </div>
+                  <p className={`font-semibold text-sm text-foreground ${sec.id === 'settlement' ? '' : 'truncate'}`}>
+                    {t(sec.titleKey)}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all"
+                        style={{ width: `${(completedCount / sec.nodes.length) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                      {completedCount}/{sec.nodes.length}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
             );
           })}
         </div>
@@ -703,49 +665,57 @@ const ProfileBuilder = () => {
 
       {/* Section Sheet */}
       <Sheet open={!!activeSection} onOpenChange={open => {
-        if (!open) {
-          handleSave();
-          setActiveSection(null);
-          setTimeout(checkSectionComplete, 100);
-        }
+        if (!open && activeSection) handleSheetClose(activeSection);
       }}>
-        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto sm:max-w-lg sm:mx-auto rounded-t-2xl">
+        <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto sm:max-w-lg sm:mx-auto rounded-t-2xl">
           <SheetHeader className="pb-4">
             <SheetTitle className="flex items-center gap-2">
-              {activeSectionData && <span className="text-xl">{activeSectionData.emoji}</span>}
-              {activeSectionData && t(activeSectionData.titleKey)}
+              {activeSectionDef && <span className="text-xl">{activeSectionDef.emoji}</span>}
+              {activeSectionDef && t(activeSectionDef.titleKey)}
             </SheetTitle>
             <SheetDescription className="text-xs">{t('mindmap.clickToFill')}</SheetDescription>
           </SheetHeader>
           {activeSection && renderSectionForm(activeSection)}
           <div className="pt-6 pb-2">
-            <Button className="w-full" onClick={() => {
-              handleSave();
-              setActiveSection(null);
-              setTimeout(checkSectionComplete, 100);
-            }}>{t('btn.done')}</Button>
+            <Button className="w-full" onClick={() => activeSection && handleSheetClose(activeSection)}>
+              {t('btn.done')}
+            </Button>
           </div>
         </SheetContent>
       </Sheet>
 
-      {/* Section Complete Alert */}
-      <AlertDialog open={!!completedAlert} onOpenChange={open => { if (!open) setCompletedAlert(null); }}>
-        <AlertDialogContent className="max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('alert.sectionComplete.title')} — {alertSectionTitle}</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-4 text-sm text-muted-foreground">
-                <p>{t('alert.sectionComplete.recommendations')}</p>
-                <p>{t('alert.sectionComplete.editable')}</p>
-                <p>{t('alert.sectionComplete.save')}</p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction>{t('alert.sectionComplete.ok')}</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Quick-start Dialog */}
+      <Dialog open={showQuickStart} onOpenChange={() => {}}>
+        <DialogContent className="max-w-sm mx-auto" onInteractOutside={e => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>{t('quickstart.title')}</DialogTitle>
+            <DialogDescription>{t('quickstart.subtitle')}</DialogDescription>
+          </DialogHeader>
+
+          <p className="text-xs text-muted-foreground">
+            {t('quickstart.step').replace('{n}', String(quickStep + 1))}
+          </p>
+
+          <p className="font-medium text-sm text-foreground">{quickSteps[quickStep].question}</p>
+          <div className="py-1">{quickSteps[quickStep].content}</div>
+
+          <div className="flex gap-2 pt-2">
+            <Button variant="ghost" size="sm" className="text-xs" onClick={handleQuickStartDone}>
+              {t('quickstart.skip')}
+            </Button>
+            <div className="flex-1" />
+            {quickStep < quickSteps.length - 1 ? (
+              <Button size="sm" onClick={() => setQuickStep(s => s + 1)}>
+                {t('quickstart.next')} <ChevronRight className="w-3.5 h-3.5 ml-1" />
+              </Button>
+            ) : (
+              <Button size="sm" onClick={handleQuickStartDone}>
+                {t('quickstart.done')} <ArrowRight className="w-3.5 h-3.5 ml-1" />
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>

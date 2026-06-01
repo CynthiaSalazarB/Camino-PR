@@ -46,17 +46,17 @@ const Resources = () => {
     {
       date: t('resources.ircc.date1'),
       title: t('resources.ircc.item1'),
-      url: 'https://www.canada.ca/en/immigration-refugees-citizenship/news/2026/02/canada-prioritizes-top-talent-in-2026-immigration-express-entry-categories.html',
+      url: 'https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry.html',
     },
     {
       date: t('resources.ircc.date2'),
       title: t('resources.ircc.item2'),
-      url: 'https://www.canada.ca/en/immigration-refugees-citizenship/news/notices.html',
+      url: 'https://www.canada.ca/en/immigration-refugees-citizenship/news.html',
     },
     {
       date: t('resources.ircc.date3'),
       title: t('resources.ircc.item3'),
-      url: 'https://www.canada.ca/en/immigration-refugees-citizenship/news/2025/12/bill-c-3-an-act-to-amend-the-citizenship-act-2025-comes-into-effect.html',
+      url: 'https://ircc.canada.ca/english/e-services/account.asp',
     },
   ];
 

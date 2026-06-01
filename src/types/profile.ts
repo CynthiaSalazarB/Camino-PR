@@ -110,6 +110,7 @@ export interface AppState {
   userProfile: UserProfile;
   completionStatus: CompletionStatus;
   generatedPlan: GeneratedAction[];
+  completedActions: string[];
   savedAt: string | null;
 }
 

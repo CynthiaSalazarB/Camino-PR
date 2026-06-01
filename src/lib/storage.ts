@@ -24,6 +24,7 @@ export function getDefaultState(): AppState {
     userProfile: { ...defaultProfile },
     completionStatus: { ...defaultCompletionStatus },
     generatedPlan: [],
+    completedActions: [],
     savedAt: null,
   };
 }

@@ -29,14 +29,14 @@ export const resources: Record<string, string> = {
   'resources.healthPlanWait.newBrunswick': '3 meses de espera',
   'resources.healthPlanWait.newfoundland': 'Posible espera — aplica al llegar',
   'resources.healthPlanWait.pei': 'Posible espera',
-  // IRCC Announcements
-  'resources.ircc.title': '📢 Anuncios IRCC',
-  'resources.ircc.description': 'Últimos anuncios oficiales de Inmigración, Refugiados y Ciudadanía de Canadá (IRCC). ¡Se actualiza diariamente!',
-  'resources.ircc.date1': '24 feb 2026',
-  'resources.ircc.item1': 'Canadá prioriza el talento en las categorías de Express Entry 2026',
-  'resources.ircc.date2': '27 ene 2026',
-  'resources.ircc.item2': 'Cambios al Programa Federal de Salud Provisional (IFHP)',
-  'resources.ircc.date3': '15 dic 2025',
-  'resources.ircc.item3': 'Ley C-3: Cambios a la Ley de Ciudadanía entran en vigor',
+  // IRCC Links (evergreen)
+  'resources.ircc.title': '📢 IRCC — Portales Oficiales',
+  'resources.ircc.description': 'Accede directamente a los portales oficiales de Inmigración, Refugiados y Ciudadanía de Canadá (IRCC).',
+  'resources.ircc.date1': 'Express Entry',
+  'resources.ircc.item1': 'Sorteos y categorías de Express Entry — consulta los últimos resultados y requisitos',
+  'resources.ircc.date2': 'Noticias IRCC',
+  'resources.ircc.item2': 'Noticias y avisos oficiales de inmigración de Canadá',
+  'resources.ircc.date3': 'Estado de tu solicitud',
+  'resources.ircc.item3': 'Revisa el estado de tu solicitud de inmigración en el portal de IRCC',
   'resources.otherResources.title': 'Productos y Servicios en Canadá',
 };
