@@ -4,15 +4,9 @@
 
 Trilingual web app (Spanish, Portuguese, English) for Latin American newcomers. Answer a short profile, get **prioritized next steps** based on your situation and document gaps, and browse curated settlement resources; all stored privately on your device.
 
-**Live demo:** [plan-canada.lovable.app](https://plan-canada.lovable.app/)
+*Built at **Building Our Future in AI — a Vibe Coding Hackathon**, for the **Settlement Intelligence & Service Navigation** track: helping Latino newcomers and their families find the right supports faster, without having to figure out Canada's fragmented settlement system alone.*
 
----
-
-## Live demo
-
-**[https://plan-canada.lovable.app/](https://plan-canada.lovable.app/)**
-
-Try the app in your browser.
+**▶ Live demo: [plan-canada.lovable.app](https://plan-canada.lovable.app/)**
 
 ---
 
@@ -25,11 +19,11 @@ Try the app in your browser.
 3. Prioritizes actions with an **Eisenhower matrix** (urgent vs important).
 4. Offers a **curated resource directory** (banks, phone, health, housing, services) filtered by province — separate from the action plan.
 
-There is **no runtime AI/LLM** yet. Only deterministic rules and scoring.
-
-**Built for:** Hackathon — *Settlement Intelligence & Service Navigation* (Eligibility & Service Matching track). We map status, needs, and documents to prioritized steps and links, not automated government qualification.
+There is **no runtime AI/LLM** yet. Only deterministic rules and scoring. We map status, needs, and documents to prioritized steps and links — not automated government qualification.
 
 ---
+
+
 
 ## The problem
 
@@ -38,6 +32,8 @@ There is **no runtime AI/LLM** yet. Only deterministic rules and scoring.
 - Trusted resources are scattered and often **not in Spanish or Portuguese.**
 
 ---
+
+
 
 ## Features
 
@@ -58,11 +54,15 @@ There is **no runtime AI/LLM** yet. Only deterministic rules and scoring.
 
 ---
 
+
+
 ## Important notice
 
 Camino PR is **not** legal advice and does **not** determine government program eligibility. Always confirm requirements with official sources ([IRCC](https://www.canada.ca/en/immigration-refugees-citizenship.html), provincial agencies, etc.). The CRS banner is a **simplified estimate**, not IRCC’s official calculator. Resource links are **curated static content** — verify before you act.
 
 ---
+
+
 
 ## Privacy
 
@@ -70,9 +70,15 @@ Camino PR is **not** legal advice and does **not** determine government program 
 
 ---
 
+
+
 ## Hackathon context
 
-**Track:** Settlement Intelligence & Service Navigation — *Eligibility & Service Matching*
+**Event:** Building Our Future in AI — a Vibe Coding Hackathon
+
+**Track:** Settlement Intelligence & Service Navigation — how to help Latino newcomers and their families find the right supports faster by identifying early needs and risks, and navigating a fragmented settlement system.
+
+The track had three sub-themes: early needs & risk flagging, **eligibility & service matching**, and trusted support network connector. **We built the second one.**
 
 **Approach:**
 
@@ -82,6 +88,23 @@ Camino PR is **not** legal advice and does **not** determine government program 
 - Eisenhower prioritization to reduce overwhelm
 
 ---
+
+
+
+## Team
+
+Built as a team during the hackathon.
+
+
+- [Cynthia Salazar](https://www.linkedin.com/in/cynthia-salazarb/)
+- [Julian Chisco](https://www.linkedin.com/in/julian-chisco/)
+- [Ernie Sumoso](https://www.linkedin.com/in/erniesumoso/)
+- [Diego Fernandez Arista](https://www.linkedin.com/in/diego-fernandez-arista/)
+
+
+---
+
+
 
 ## License
 
@@ -102,4 +125,4 @@ Camino PR is **not** legal advice and does **not** determine government program 
 
 ---
 
-*Built with [TanStack Start](https://tanstack.com/start), [shadcn/ui](https://ui.shadcn.com/), and [Lovable](https://lovable.dev/). Live demo: [plan-canada.lovable.app](https://plan-canada.lovable.app/).*
+*Built with [TanStack Start](https://tanstack.com/start), [shadcn/ui](https://ui.shadcn.com/), and [Lovable](https://lovable.dev/).*
